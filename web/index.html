@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>隔离小集群升级排程</title>
+  <link rel="stylesheet" href="/web/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="title">
+      <h1>隔离小集群升级排程</h1>
+      <span id="scenario-name" class="sub"></span>
+    </div>
+    <div class="actions">
+      <label class="btn">
+        导入场景 JSON
+        <input id="file-input" type="file" accept=".json,application/json" hidden />
+      </label>
+      <button id="btn-reload" class="btn">重载样例</button>
+      <button id="btn-reschedule" class="btn primary">重新自动排程</button>
+    </div>
+  </header>
+
+  <section id="summary" class="summary"></section>
+
+  <main>
+    <div id="gantt-scroll" class="gantt-scroll">
+      <div id="gantt" class="gantt">
+        <div id="time-axis"></div>
+        <div id="rows"></div>
+        <div id="dst-layer"></div>
+      </div>
+    </div>
+
+    <aside id="side">
+      <div class="panel">
+        <h2>冲突与约束告警 <span id="conf-count" class="badge">0</span></h2>
+        <ul id="conflict-list" class="conflict-list"></ul>
+      </div>
+      <div class="panel">
+        <h2>夏令时切换点</h2>
+        <ul id="dst-list" class="dst-list"></ul>
+      </div>
+      <div class="panel">
+        <h2>回退人手池</h2>
+        <ul id="pool-list" class="pool-list"></ul>
+        <p class="hint">同池集群的<strong>关键步</strong>在时间轴上同时活跃即超出容量，
+          计划器自动排程时会强制错峰；手动拖拽后由重算显式报出。</p>
+      </div>
+    </aside>
+  </main>
+
+  <div id="tooltip" class="tooltip" hidden></div>
+
+  <script src="/web/app.js"></script>
+</body>
+</html>

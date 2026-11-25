@@ -1,0 +1,163 @@
+{
+  "name": "2026 年秋小集群隔离升级（固定日期复现 DST）",
+  "horizon_start": "2026-10-01T00:00:00Z",
+  "horizon_end": "2026-11-05T00:00:00Z",
+  "rollback_pools": [
+    {"id": "pool-alpha", "name": "回退一组（美日轮值，容量 1）", "capacity": 1},
+    {"id": "pool-beta", "name": "回退二组（欧澳轮值，容量 1）", "capacity": 1}
+  ],
+  "engineers": [
+    {
+      "id": "eng-na",
+      "name": "北美值守 王工",
+      "zone": "America/New_York",
+      "availability": [
+        {"weekday": 0, "window": "21:00-02:00"},
+        {"weekday": 1, "window": "21:00-02:00"},
+        {"weekday": 2, "window": "21:00-02:00"},
+        {"weekday": 3, "window": "21:00-02:00"},
+        {"weekday": 4, "window": "21:00-02:00"}
+      ]
+    },
+    {
+      "id": "eng-jp",
+      "name": "东京值守 佐藤",
+      "zone": "Asia/Tokyo",
+      "availability": [
+        {"weekday": 1, "window": "22:00-04:00"},
+        {"weekday": 2, "window": "22:00-04:00"},
+        {"weekday": 3, "window": "22:00-04:00"},
+        {"weekday": 4, "window": "22:00-04:00"},
+        {"weekday": 5, "window": "22:00-04:00"},
+        {"start": "2026-10-31T22:00:00", "end": "2026-11-01T05:00:00"}
+      ]
+    },
+    {
+      "id": "eng-eu",
+      "name": "欧洲值守 穆勒",
+      "zone": "Europe/Berlin",
+      "availability": [
+        {"weekday": 0, "window": "22:00-03:00"},
+        {"weekday": 1, "window": "22:00-03:00"},
+        {"weekday": 2, "window": "22:00-03:00"},
+        {"weekday": 3, "window": "22:00-03:00"},
+        {"weekday": 4, "window": "22:00-03:00"}
+      ]
+    },
+    {
+      "id": "eng-au",
+      "name": "悉尼值守 Chloe",
+      "zone": "Australia/Sydney",
+      "availability": [
+        {"weekday": 0, "window": "22:00-04:00"},
+        {"weekday": 1, "window": "22:00-04:00"},
+        {"weekday": 2, "window": "22:00-04:00"},
+        {"weekday": 3, "window": "22:00-04:00"},
+        {"weekday": 4, "window": "22:00-04:00"}
+      ]
+    }
+  ],
+  "clusters": [
+    {
+      "id": "cl-ny",
+      "name": "纽约边缘集群",
+      "zone": "America/New_York",
+      "current_version": "8.2.1",
+      "target_version": "9.0.0",
+      "engineer_id": "eng-na",
+      "rollback_pool_id": "pool-alpha",
+      "note": "秋季回退当天本地 02:00 时钟拨回 01:00",
+      "steps": [
+        {"name": "前置检查/快照", "duration_min": 30, "critical": false},
+        {"name": "控制面升级", "duration_min": 45, "critical": true},
+        {"name": "数据面滚动升级", "duration_min": 60, "critical": true},
+        {"name": "验证与收尾", "duration_min": 30, "critical": false}
+      ],
+      "blackouts": [
+        {"start": "2026-10-31T23:30:00", "end": "2026-11-01T03:00:00",
+         "reason": "万圣节支付高峰冻结（含 DST 回退小时）"},
+        {"start": "2026-10-05T00:00:00", "end": "2026-10-06T06:00:00",
+         "reason": "月度结算窗口"}
+      ]
+    },
+    {
+      "id": "cl-tok",
+      "name": "东京交易集群",
+      "zone": "Asia/Tokyo",
+      "current_version": "8.4.0",
+      "target_version": "9.0.1",
+      "engineer_id": "eng-jp",
+      "rollback_pool_id": "pool-alpha",
+      "requires": ["cl-ny"],
+      "note": "与纽约共用回退一组；无 DST，但值守与黑窗口跨午夜",
+      "steps": [
+        {"name": "流量摘除", "duration_min": 30, "critical": false},
+        {"name": "Broker 升级（关键）", "duration_min": 60, "critical": true},
+        {"name": "回放与校验", "duration_min": 45, "critical": false}
+      ],
+      "blackouts": [
+        {"start": "2026-10-14T23:00:00", "end": "2026-10-15T02:00:00",
+         "reason": "日经期货夜盘（跨午夜）"}
+      ]
+    },
+    {
+      "id": "cl-lon",
+      "name": "伦敦网关集群",
+      "zone": "Europe/London",
+      "current_version": "7.9.3",
+      "target_version": "8.1.0",
+      "engineer_id": "eng-eu",
+      "rollback_pool_id": "pool-beta",
+      "note": "英国 10/25 02:00 本地回退（BST→GMT）",
+      "steps": [
+        {"name": "配置备份", "duration_min": 30, "critical": false},
+        {"name": "网关二进制升级（关键）", "duration_min": 45, "critical": true},
+        {"name": "连接重建验证", "duration_min": 30, "critical": false}
+      ],
+      "blackouts": [
+        {"start": "2026-10-19T00:00:00", "end": "2026-10-20T06:00:00",
+         "reason": "伦敦交易所周末演练"}
+      ]
+    },
+    {
+      "id": "cl-fra",
+      "name": "法兰克福固定窗口集群",
+      "zone": "Europe/Berlin",
+      "current_version": "8.0.2",
+      "target_version": "8.1.0",
+      "engineer_id": "eng-eu",
+      "rollback_pool_id": "pool-beta",
+      "pinned_start": "2026-10-07T22:30:00",
+      "note": "固定维护窗口（与伦敦共用回退二组），拖拽后出现 pinned_moved 警告",
+      "steps": [
+        {"name": "健康检查", "duration_min": 30, "critical": false},
+        {"name": "数据库主备切换（关键）", "duration_min": 45, "critical": true},
+        {"name": "应用升级", "duration_min": 45, "critical": true},
+        {"name": "验收", "duration_min": 30, "critical": false}
+      ],
+      "blackouts": [
+        {"start": "2026-10-25T00:00:00", "end": "2026-10-26T06:00:00",
+         "reason": "欧洲 DST 回退夜冻结"}
+      ]
+    },
+    {
+      "id": "cl-syd",
+      "name": "悉尼缓存集群",
+      "zone": "Australia/Sydney",
+      "current_version": "7.5.0",
+      "target_version": "8.0.0",
+      "engineer_id": "eng-au",
+      "rollback_pool_id": "pool-beta",
+      "note": "南半球 10/4 02:00 本地春季跳变（AEST 提前一小时）",
+      "steps": [
+        {"name": "副本同步检查", "duration_min": 30, "critical": false},
+        {"name": "缓存集群重启（关键）", "duration_min": 45, "critical": true},
+        {"name": "预热与验证", "duration_min": 30, "critical": false}
+      ],
+      "blackouts": [
+        {"start": "2026-10-04T00:00:00", "end": "2026-10-04T10:00:00",
+         "reason": "春季 DST 跳变夜冻结（本地 02:00→03:00）"}
+      ]
+    }
+  ]
+}
